@@ -29,7 +29,10 @@ internal class PdfFiles(private val context: Context) {
 
         val document = CachedPdf(UUID.randomUUID().toString(), displayName(uri))
         val file = fileFor(document)
-        if (!file.parentFile!!.mkdirs()) throw IOException("Couldn't create document cache")
+        val folder = requireNotNull(file.parentFile)
+        if (!folder.mkdirs() && !folder.isDirectory) {
+            throw IOException("Couldn't create document cache")
+        }
 
         var completed = false
         try {
@@ -50,10 +53,7 @@ internal class PdfFiles(private val context: Context) {
             completed = true
             return document
         } finally {
-            if (!completed) {
-                file.delete()
-                file.parentFile?.delete()
-            }
+            if (!completed) discard(document)
         }
     }
 
@@ -75,14 +75,22 @@ internal class PdfFiles(private val context: Context) {
         fileFor(document).parentFile?.setLastModified(System.currentTimeMillis())
     }
 
+    fun discard(document: CachedPdf) {
+        removeCacheEntry(requireNotNull(fileFor(document).parentFile))
+    }
+
     fun prune(activeId: String?) {
         val cutoff = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(24)
         directory.listFiles()?.forEach { entry ->
             if (entry.name != activeId && validId(entry.name) && entry.lastModified() < cutoff) {
-                File(entry, "original.pdf").delete()
-                entry.delete()
+                removeCacheEntry(entry)
             }
         }
+    }
+
+    private fun removeCacheEntry(folder: File) {
+        File(folder, "original.pdf").delete()
+        folder.delete()
     }
 
     private fun fileFor(document: CachedPdf): File {

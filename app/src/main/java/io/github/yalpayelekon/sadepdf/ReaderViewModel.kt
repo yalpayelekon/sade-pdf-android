@@ -6,22 +6,28 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 internal data class ReaderState(
     val document: CachedPdf? = null,
+    val pending: CachedPdf? = null,
     val importing: Boolean = false,
     val ready: Boolean = false,
     val displayError: Boolean = false,
-)
+) {
+    val canUseDocument: Boolean
+        get() = ready && pending == null && !importing
+}
 
 internal class ReaderViewModel(
     application: Application,
@@ -44,37 +50,55 @@ internal class ReaderViewModel(
 
     fun open(uri: Uri) {
         importJob?.cancel()
-        mutableState.value = mutableState.value.copy(importing = true)
+        discard(state.value.pending)
+        mutableState.value = state.value.copy(pending = null, importing = true)
         importJob = viewModelScope.launch {
+            var copied: CachedPdf? = null
             try {
-                val document = withContext(Dispatchers.IO) { files.importPdf(uri) }
-                savedState[DOCUMENT_ID] = document.id
-                savedState[DOCUMENT_NAME] = document.displayName
-                mutableState.value = ReaderState(document = document)
-            } catch (_: IOException) {
-                importFailed()
-            } catch (_: SecurityException) {
-                importFailed()
-            } catch (_: IllegalArgumentException) {
-                importFailed()
+                // Keep ownership of a completed copy even if cancellation wins the handoff to Main.
+                withContext(Dispatchers.IO) { copied = files.importPdf(uri) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                notify(R.string.error_open)
+            } finally {
+                if (isActive) {
+                    mutableState.value = state.value.copy(pending = copied, importing = false)
+                } else {
+                    copied?.let { document ->
+                        withContext(NonCancellable + Dispatchers.IO) { files.discard(document) }
+                    }
+                }
             }
         }
     }
 
     fun documentOpened(id: String) {
-        if (state.value.document?.id == id) {
-            mutableState.value = state.value.copy(ready = true, displayError = false)
+        val current = state.value
+        val pending = current.pending
+        if (pending?.id == id) {
+            savedState[DOCUMENT_ID] = pending.id
+            savedState[DOCUMENT_NAME] = pending.displayName
+            mutableState.value = ReaderState(document = pending, ready = true)
+        } else if (current.document?.id == id) {
+            mutableState.value = current.copy(ready = true, displayError = false)
         }
     }
 
     fun documentFailed(id: String, cancelled: Boolean) {
-        if (state.value.document?.id != id) return
-        if (cancelled) {
+        val current = state.value
+        val pending = current.pending
+        if (pending?.id == id) {
+            discard(pending)
+            mutableState.value = current.copy(
+                pending = null,
+                displayError = current.displayError || (!cancelled && current.document == null),
+            )
+            if (!cancelled && current.document != null) notify(R.string.error_document)
+        } else if (current.document?.id == id) {
             savedState.remove<String>(DOCUMENT_ID)
             savedState.remove<String>(DOCUMENT_NAME)
-            mutableState.value = ReaderState(importing = state.value.importing)
-        } else {
-            mutableState.value = state.value.copy(ready = false, displayError = true)
+            mutableState.value = current.copy(document = null, ready = false, displayError = !cancelled)
         }
     }
 
@@ -82,9 +106,11 @@ internal class ReaderViewModel(
         viewModelScope.launch(Dispatchers.IO) { files.touch(document) }
     }
 
-    private fun importFailed() {
-        mutableState.value = mutableState.value.copy(importing = false)
-        notify(R.string.error_open)
+    private fun discard(document: CachedPdf?) {
+        if (document == null) return
+        viewModelScope.launch {
+            withContext(NonCancellable + Dispatchers.IO) { files.discard(document) }
+        }
     }
 
     fun notify(@StringRes message: Int) {

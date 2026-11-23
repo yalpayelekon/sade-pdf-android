@@ -26,7 +26,8 @@ class ReaderActivity : AppCompatActivity() {
         if (uri != null) reader.open(uri)
     }
     private val viewer: ReaderFragment?
-        get() = supportFragmentManager.findFragmentById(R.id.document_view) as? ReaderFragment
+        get() = supportFragmentManager.fragments.filterIsInstance<ReaderFragment>()
+            .firstOrNull { it.documentId == reader.state.value.document?.id }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +56,7 @@ class ReaderActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 val fragment = viewer
-                if (fragment?.isTextSearchActive == true) {
+                if (reader.state.value.canUseDocument && fragment?.isTextSearchActive == true) {
                     fragment.isTextSearchActive = false
                 } else {
                     isEnabled = false
@@ -74,6 +75,7 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
         if (savedInstanceState == null) openFromIntent(intent)
+        render(reader.state.value)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -107,7 +109,7 @@ class ReaderActivity : AppCompatActivity() {
     private fun sharePdf() {
         val state = reader.state.value
         val document = state.document ?: return
-        if (!state.ready || state.importing) return
+        if (!state.canUseDocument) return
         try {
             val share = PdfFiles(this).shareIntent(document)
             startActivity(Intent.createChooser(share, getString(R.string.share_title)))
@@ -120,25 +122,38 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     private fun render(state: ReaderState) {
-        val document = state.document
-        val currentViewer = viewer
-        if (document?.id != currentViewer?.documentId) {
-            val transaction = supportFragmentManager.beginTransaction().setReorderingAllowed(true)
-            if (document != null) {
-                transaction.replace(R.id.document_view, ReaderFragment.forDocument(document.id))
-            } else if (currentViewer != null) {
-                transaction.remove(currentViewer)
-            }
-            transaction.commitNow()
-        }
+        val document = state.pending ?: state.document
+        val showDocument = document != null && (state.pending != null || !state.displayError)
+        binding.documentView.isVisible = showDocument && !state.importing
+        renderViewers(state)
 
         binding.toolbar.title = document?.displayName ?: getString(R.string.app_name)
         val actions = binding.toolbar.menu
-        actions.findItem(R.id.action_search).isVisible = state.ready && !state.importing
-        actions.findItem(R.id.action_share).isVisible = state.ready && !state.importing
-        binding.documentView.isVisible = document != null && !state.displayError
-        binding.emptyPanel.isVisible = (document == null || state.displayError) && !state.importing
+        actions.findItem(R.id.action_search).isVisible = state.canUseDocument
+        actions.findItem(R.id.action_share).isVisible = state.canUseDocument
+        binding.emptyPanel.isVisible = !showDocument && !state.importing
         binding.documentError.isVisible = state.displayError
         binding.importProgress.isVisible = state.importing
+    }
+
+    private fun renderViewers(state: ReaderState) {
+        val activeId = state.document
+            ?.takeIf { state.ready || (!state.importing && state.pending == null) }
+            ?.id
+        val visibleId = state.pending?.id ?: activeId
+        val transaction = supportFragmentManager.beginTransaction().setReorderingAllowed(true)
+        val viewers = supportFragmentManager.fragments.filterIsInstance<ReaderFragment>()
+
+        for (fragment in viewers) {
+            when (fragment.documentId) {
+                visibleId -> if (fragment.isHidden) transaction.show(fragment)
+                activeId -> if (!fragment.isHidden) transaction.hide(fragment)
+                else -> transaction.remove(fragment)
+            }
+        }
+        if (visibleId != null && viewers.none { it.documentId == visibleId }) {
+            transaction.add(R.id.document_view, ReaderFragment.forDocument(visibleId))
+        }
+        if (!transaction.isEmpty) transaction.commitNow()
     }
 }

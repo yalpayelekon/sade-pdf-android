@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <provider
+            android:name="io.github.yalpayelekon.sadepdf.ImportTestProvider"
+            android:authorities="io.github.yalpayelekon.sadepdf.test.fixtures"
+            android:exported="true" />
+    </application>
+</manifest>
