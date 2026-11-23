@@ -1,0 +1,6 @@
+<resources>
+    <color name="reader_primary">#84D9C6</color>
+    <color name="reader_on_primary">#00382F</color>
+    <color name="reader_surface">#141B19</color>
+    <color name="reader_on_surface">#E0EBE8</color>
+</resources>

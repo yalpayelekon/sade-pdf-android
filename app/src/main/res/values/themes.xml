@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.SadePdf" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/reader_primary</item>
+        <item name="colorOnPrimary">@color/reader_on_primary</item>
+        <item name="colorSurface">@color/reader_surface</item>
+        <item name="colorOnSurface">@color/reader_on_surface</item>
+        <item name="android:windowBackground">@color/reader_surface</item>
+    </style>
+</resources>

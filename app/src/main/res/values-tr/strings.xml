@@ -1,0 +1,10 @@
+<resources>
+    <string name="open_pdf">PDF aç</string>
+    <string name="search_pdf">PDF’de ara</string>
+    <string name="share_pdf">Orijinal PDF’yi paylaş</string>
+    <string name="share_title">Orijinal PDF’yi paylaş</string>
+    <string name="loading_pdf">PDF açılıyor…</string>
+    <string name="error_open">Dosya okunamadı. Erişimi ve boş alanı kontrol edip tekrar dene.</string>
+    <string name="error_document">Bu PDF görüntülenemedi.</string>
+    <string name="error_share">PDF paylaşılamadı. Dosyayı yeniden açmayı dene.</string>
+</resources>

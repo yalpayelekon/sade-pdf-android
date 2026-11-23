@@ -1,0 +1,7 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:strokeColor="@color/reader_on_surface" android:strokeWidth="2"
+        android:pathData="M7,12L17,6M7,12L17,18" />
+    <path android:fillColor="@color/reader_on_surface"
+        android:pathData="M6,9A3,3 0,1 0,6 15A3,3 0,1 0,6 9ZM18,3A3,3 0,1 0,18 9A3,3 0,1 0,18 3ZM18,15A3,3 0,1 0,18 21A3,3 0,1 0,18 15Z" />
+</vector>

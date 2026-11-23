@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name" translatable="false">Sade PDF</string>
+    <string name="open_pdf">Open PDF</string>
+    <string name="search_pdf">Find in PDF</string>
+    <string name="share_pdf">Share original PDF</string>
+    <string name="share_title">Share original PDF</string>
+    <string name="loading_pdf">Opening PDF…</string>
+    <string name="error_open">Couldn’t read this file. Check access and available storage, then try again.</string>
+    <string name="error_document">Couldn’t display this PDF.</string>
+    <string name="error_share">Couldn’t share this PDF. Try opening it again.</string>
+</resources>
