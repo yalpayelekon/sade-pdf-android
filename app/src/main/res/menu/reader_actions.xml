@@ -6,4 +6,5 @@
         android:title="@string/search_pdf" android:visible="false" app:showAsAction="always" />
     <item android:id="@+id/action_share" android:icon="@drawable/ic_share"
         android:title="@string/share_pdf" android:visible="false" app:showAsAction="always" />
+    <item android:id="@+id/action_privacy" android:title="@string/privacy_policy" app:showAsAction="never" />
 </menu>

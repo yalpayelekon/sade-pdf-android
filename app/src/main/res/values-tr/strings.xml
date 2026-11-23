@@ -7,4 +7,5 @@
     <string name="error_open">Dosya okunamadı. Erişimi ve boş alanı kontrol edip tekrar dene.</string>
     <string name="error_document">Bu PDF görüntülenemedi.</string>
     <string name="error_share">PDF paylaşılamadı. Dosyayı yeniden açmayı dene.</string>
+    <string name="privacy_policy">Gizlilik politikası</string>
 </resources>

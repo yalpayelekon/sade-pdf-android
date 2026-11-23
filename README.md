@@ -30,3 +30,7 @@ On startup, the app removes inactive copies older than 24 hours. Sharing grants 
 receiving app read access to the selected file.
 
 Released under the Apache License 2.0.
+
+## Privacy
+
+Read the [Sade PDF privacy policy](https://yalpayelekon.github.io/sade-pdf-android/privacy/).

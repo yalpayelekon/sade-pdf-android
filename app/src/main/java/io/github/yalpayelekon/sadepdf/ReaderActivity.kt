@@ -49,6 +49,7 @@ class ReaderActivity : AppCompatActivity() {
                 R.id.action_open -> choosePdf()
                 R.id.action_search -> viewer?.let { it.isTextSearchActive = !it.isTextSearchActive }
                 R.id.action_share -> sharePdf()
+                R.id.action_privacy -> openPrivacyPolicy()
                 else -> return@setOnMenuItemClickListener false
             }
             true
@@ -119,6 +120,10 @@ class ReaderActivity : AppCompatActivity() {
         } catch (_: ActivityNotFoundException) {
             reader.notify(R.string.error_share)
         }
+    }
+
+    private fun openPrivacyPolicy() {
+        startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(getString(R.string.privacy_policy_url))))
     }
 
     private fun render(state: ReaderState) {
